@@ -1,0 +1,13 @@
+{
+  "version": "7.0.0",
+  "dialect": "postgresql",
+  "steps": [
+    {
+      "stepType": "CreateTable",
+      "createTable": {
+        "isGenerated": false,
+        "tableName": "users"
+      }
+    }
+  ]
+}
