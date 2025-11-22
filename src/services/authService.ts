@@ -1,4 +1,8 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import * as dotenv from "dotenv";
+
+dotenv.config();
+
 
 export interface SignUpPayload {
 	email: string;
@@ -38,10 +42,30 @@ export const signInWithGoogle = async (
 	supabase: SupabaseClient,
 	payload: GoogleAuthPayload,
 ) => {
+	// Build callback URL with priority:
+	// 1. Explicitly provided redirectTo
+	// 2. APP_URL from environment
+	// 3. Fallback to localhost (development only)
+	const redirectTo =
+		payload.redirectTo ||
+		process.env.APP_URL ||
+		"http://localhost:3000";
+
+	// Ensure the callback path is appended
+	const callbackUrl = redirectTo.endsWith("/auth/callback")
+		? redirectTo
+		: `${redirectTo}/auth/callback`;
+
+	console.log(
+		"[Google OAuth] Redirect URL configured:",
+		callbackUrl
+	);
+
 	return await supabase.auth.signInWithOAuth({
 		provider: "google",
 		options: {
-			redirectTo: payload.redirectTo || `${process.env.APP_URL}/auth/callback`,
+			redirectTo: callbackUrl,
+			skipBrowserRedirect: false,
 		},
 	});
 };

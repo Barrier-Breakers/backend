@@ -91,3 +91,59 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// Proposição model - Parliamentary proposals from Câmara dos Deputados
+model Proposicao {
+  // Primary ID
+  id                    Int       @id
+  
+  // Basic Info
+  uri                   String    @unique
+  siglaTipo             String
+  numero                Int
+  ano                   Int
+  codTipo               Int
+  descricaoTipo         String
+  
+  // Description
+  ementa                String
+  ementaDetalhada       String?
+  keywords              String?
+  
+  // Dates and Links
+  dataApresentacao      DateTime?
+  uriOrgaoNumerador     String?
+  urlInteiroTeor        String?
+  
+  // References to other propositions
+  uriPropAnterior       String?
+  uriPropPrincipal      String?
+  uriPropPosterior      String?
+  
+  // Status fields (flattened from ultimoStatus)
+  statusData            DateTime?
+  statusSequencia       String?
+  uriRelator            String?
+  codOrgao              String?
+  siglaOrgao            String?
+  uriOrgao              String?
+  regime                String?
+  descricaoTramitacao   String?
+  idTipoTramitacao      String?
+  descricaoSituacao     String?
+  idSituacao            String?
+  despacho              String?
+  statusApreciacao      String?
+  statusUrl             String?
+  
+  // Metadata
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([ano])
+  @@index([siglaTipo])
+  @@index([numero])
+  @@index([statusData])
+  @@index([descricaoSituacao])
+  @@map("proposicoes")
+}

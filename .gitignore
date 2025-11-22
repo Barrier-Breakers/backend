@@ -3,3 +3,6 @@ node_modules
 .env
 
 /src/generated/prisma
+
+proposicoes-2025.json
+proposicoes-2025-resumido.json

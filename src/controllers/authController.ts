@@ -107,7 +107,8 @@ export const signInWithGoogle = async (
 ): Promise<void> => {
 	try {
 		const supabase: SupabaseClient = req.app.locals.supabase;
-		const { redirectTo } = req.body;
+		// Get redirectTo from body, or use APP_URL from env
+		const redirectTo = req.body.redirectTo || `${process.env.APP_URL || "http://localhost:3000"}/auth/callback`;
 
 		if (!supabase) {
 			res.status(500).json({ error: "Supabase client not initialized" });
@@ -126,6 +127,7 @@ export const signInWithGoogle = async (
 		res.status(200).json({
 			message: "Google auth URL generated",
 			url: data.url,
+			redirectTo,
 		});
 	} catch (err) {
 		console.error("Google SignIn error:", err);
@@ -149,6 +151,40 @@ export const getMe = async (
 		});
 	} catch (err) {
 		console.error("GetMe error:", err);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};
+
+export const logout = async (
+	req: AuthenticatedRequest,
+	res: Response,
+): Promise<void> => {
+	try {
+		const supabase: SupabaseClient = req.app.locals.supabase;
+
+		if (!supabase) {
+			res.status(500).json({ error: "Supabase client not initialized" });
+			return;
+		}
+
+		if (!req.user) {
+			res.status(401).json({ error: "User not authenticated" });
+			return;
+		}
+
+		// Sign out from Supabase
+		const { error } = await authService.signOut(supabase);
+
+		if (error) {
+			console.error("Supabase logout error:", error);
+		}
+
+		res.status(200).json({
+			message: "Logout successful",
+			user: req.user.email,
+		});
+	} catch (err) {
+		console.error("Logout error:", err);
 		res.status(500).json({ error: "Internal server error" });
 	}
 };

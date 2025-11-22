@@ -301,4 +301,42 @@ router.post(
  */
 router.get("/me", authMiddleware, authController.getMe);
 
+/**
+ * @openapi
+ * /api/auth/logout:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Logout current user
+ *     description: Sign out the currently authenticated user. Requires Bearer token in Authorization header. Invalidates the session on the server side.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Logout successful
+ *                 user:
+ *                   type: string
+ *                   example: user@example.com
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/logout", authMiddleware, authController.logout);
+
 export default router;
