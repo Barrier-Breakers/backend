@@ -30,7 +30,7 @@ const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey);
 const app = (0, express_1.default)();
 app.locals.supabase = supabase;
 app.locals.prisma = prisma_1.default;
-const port = process.env.PORT || 4000;
+const port = process.env.NODE_ENV === 'production' ? 8080 : (process.env.PORT || 4000);
 app.use(express_1.default.json());
 (0, corsMiddleware_1.setupCors)(app);
 app.use(loggingMiddleware_1.loggingMiddleware);
