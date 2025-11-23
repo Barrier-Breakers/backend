@@ -23,6 +23,7 @@ app.locals.supabase = supabase;
 app.locals.prisma = prisma;
 const port = process.env.NODE_ENV === 'production' ? 8080 : (process.env.PORT || 4000);
 
+
 app.use(express.json());
 
 setupCors(app);
