@@ -77,6 +77,31 @@ Buscar proposição específica
 GET /api/proposicoes/2481874
 ```
 
+### GET /api/proposicoes/:id/simplify
+Gerar versão simplificada em texto e áudio (Gemini + TTS).
+
+**Exemplo:**
+```bash
+GET /api/proposicoes/2481874/simplify
+```
+
+**Response:**
+```json
+{
+  "text": "Versão simplificada em português...",
+  "audioBase64": "UklGRiQAAABXQVZFZm10IBAAAAAB... (base64 wav)"
+}
+```
+
+Configuração: defina a variável de ambiente `GOOGLE_GENERATIVE_AI_API_KEY` para que o serviço chame o Gemini (text generation). Você também pode usar `GOOGLE_API_KEY` ou `GEMINI_API_KEY` como alias se preferir.
+
+Para o serviço de Texto -> Fala (Chirp 3) usamos o Cloud Text-to-Speech da Google, portanto defina também `GOOGLE_APPLICATION_CREDENTIALS` (apontando para o arquivo JSON de service account) ou configure as credenciais de aplicação padrão no ambiente.
+
+Opções adicionais:
+- `GEMINI_TTS_TIMEOUT_MS`: timeout (ms) para a chamada de TTS; padrão 180000 (3 minutos).
+- `GEMINI_TTS_ATTEMPTS`: número de tentativas para TTS; padrão 3.
+- `GEMINI_SUMMARIZE_TIMEOUT_MS`: timeout (ms) para a geração de texto resumido; padrão 30000 (30 segundos).
+
 ### GET /api/proposicoes/situacao/:situacao
 Buscar proposições por situação
 

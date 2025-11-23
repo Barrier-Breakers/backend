@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
@@ -15,6 +15,12 @@ const prisma = new PrismaClient({
 			? ["info", "warn", "error"]
 			: ["warn", "error"],
 }) as any;
+
+// Validate that the generated client contains the expected model properties
+if (!prisma || !prisma.proposicao) {
+	console.error('[Prisma] Generated client does not expose `proposicao` model.');
+	console.error('This likely means `prisma generate` was not executed before build/start.');
+}
 
 // Handle disconnection on process exit
 process.on("SIGINT", async () => {

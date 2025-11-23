@@ -1,4 +1,5 @@
 import prisma from "../db/prisma";
+import * as geminiService from "./geminiService";
 
 export interface SearchFilters {
 	siglaTipo?: string;
@@ -93,27 +94,19 @@ export const searchProposicoes = async (
 	}
 
 	// Apply search term across multiple fields
+	// For each search word, require it to be present in at least one of the searchable fields
 	if (query && query.length > 0) {
-		where.OR = [
-			{
-				keywords: {
-					contains: query,
-					mode: "insensitive",
-				},
-			},
-			{
-				ementa: {
-					contains: query,
-					mode: "insensitive",
-				},
-			},
-			{
-				despacho: {
-					contains: query,
-					mode: "insensitive",
-				},
-			},
-		];
+		const words = query.trim().split(/\s+/).filter((word) => word.length > 0);
+		if (words.length > 0) {
+			// Build an AND array where each element is an OR across the fields for a single word
+			where.AND = words.map((word) => ({
+				OR: [
+					{ keywords: { contains: word, mode: "insensitive" as const } },
+					{ ementa: { contains: word, mode: "insensitive" as const } },
+					{ despacho: { contains: word, mode: "insensitive" as const } },
+				],
+			}));
+		}
 	}
 
 	// Execute search
@@ -144,9 +137,66 @@ export const searchProposicoes = async (
  * Get proposição by ID
  */
 export const getProposicaoById = async (id: number) => {
-	return await prisma.proposicao.findUnique({
-		where: { id },
-	});
+	// Use generated model if available
+	try {
+		if (prisma.proposicao && typeof prisma.proposicao.findUnique === 'function') {
+			return await prisma.proposicao.findUnique({ where: { id } });
+		}
+	} catch (err) {
+		console.error('[ProposicaoService] Error using prisma.proposicao model:', err);
+	}
+
+	// Fallback to raw query if generated client lacks the model (e.g., in certain build scenarios)
+	try {
+		const rows: any = await prisma.$queryRaw`SELECT * FROM proposicoes WHERE id = ${id} LIMIT 1`;
+		return Array.isArray(rows) ? rows[0] ?? null : rows ?? null;
+	} catch (err) {
+		console.error('[ProposicaoService] Fallback raw query failed:', err);
+		throw err;
+	}
+};
+
+/**
+ * Simplify proposição using Gemini text model and generate audio with TTS.
+ * Returns an object with `text` (summarized content) and `audioBase64`.
+ */
+export const simplifyProposicao = async (id: number) => {
+	const proposicao = await getProposicaoById(id);
+	if (!proposicao) return null;
+
+	// Build a combined text with relevant fields for summarization
+	const pieces: string[] = [];
+	pieces.push(`ID: ${proposicao.id} - ${proposicao.siglaTipo} ${proposicao.numero}/${proposicao.ano}`);
+	if (proposicao.ementa) pieces.push(`Ementa: ${proposicao.ementa}`);
+	if (proposicao.ementaDetalhada) pieces.push(`Ementa Detalhada: ${proposicao.ementaDetalhada}`);
+	if (proposicao.keywords) pieces.push(`Keywords: ${proposicao.keywords}`);
+	if (proposicao.despacho) pieces.push(`Despacho: ${proposicao.despacho}`);
+	if (proposicao.descricaoSituacao) pieces.push(`Situação: ${proposicao.descricaoSituacao}`);
+	if (proposicao.regime) pieces.push(`Regime: ${proposicao.regime}`);
+
+	const content = pieces.join("\n\n");
+
+	// Summarize text
+	try {
+		console.log(`[ProposicaoService] SimplifyProposicao - id=${id} - content chars=${content.length}`);
+		const summarized = await geminiService.summarizeText(content, "pt-BR");
+		let audioBase64: string | null = null;
+		try {
+			audioBase64 = await geminiService.textToSpeechBase64(summarized);
+		} catch (ttsErr) {
+			console.error("[ProposicaoService] TTS error:", ttsErr);
+			// Keep going and return text only if TTS fails
+			audioBase64 = null;
+		}
+
+		return {
+			text: summarized,
+			audioBase64,
+		};
+	} catch (err) {
+		console.error("[ProposicaoService] simplifyProposicao error:", err);
+		throw err;
+	}
 };
 
 /**

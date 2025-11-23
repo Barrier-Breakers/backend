@@ -18,9 +18,11 @@ const ALLOWED_ORIGINS = [
 	// Dev Tunnels (Microsoft Dev Tunnels)
 	"https://4d8wf50z-3000.brs.devtunnels.ms",
 	"https://4d8wf50z-4000.brs.devtunnels.ms",
+	"https://4d8wf50z-4000.brs.devtunnels.ms/",
+	"*",
 
 	// Add production URLs here when ready
-	// "https://yourdomain.com",
+	"https://legistlai-frontend.vercel.app",
 	// "https://app.yourdomain.com",
 ];
 

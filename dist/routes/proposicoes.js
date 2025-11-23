@@ -1,12 +1,42 @@
-import { Router } from "express";
-import * as proposicaoController from "../controllers/proposicaoController";
-import {
-	searchRateLimiter,
-	proposicaoRateLimiter,
-} from "../middlewares/proposicaoMiddleware";
-
-const router = Router();
-
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const proposicaoController = __importStar(require("../controllers/proposicaoController"));
+const proposicaoMiddleware_1 = require("../middlewares/proposicaoMiddleware");
+const router = (0, express_1.Router)();
 /**
  * @openapi
  * /proposicoes/search:
@@ -156,8 +186,7 @@ const router = Router();
  *       500:
  *         description: Internal server error
  */
-router.get("/search", searchRateLimiter, proposicaoController.search);
-
+router.get("/search", proposicaoMiddleware_1.searchRateLimiter, proposicaoController.search);
 /**
  * @openapi
  * /proposicoes/stats/geral:
@@ -209,8 +238,7 @@ router.get("/search", searchRateLimiter, proposicaoController.search);
  *       500:
  *         description: Internal server error
  */
-router.get("/stats/geral", proposicaoRateLimiter, proposicaoController.getStats);
-
+router.get("/stats/geral", proposicaoMiddleware_1.proposicaoRateLimiter, proposicaoController.getStats);
 /**
  * @openapi
  * /proposicoes/situacao/{situacao}:
@@ -268,12 +296,7 @@ router.get("/stats/geral", proposicaoRateLimiter, proposicaoController.getStats)
  *       500:
  *         description: Internal server error
  */
-router.get(
-	"/situacao/:situacao",
-	proposicaoRateLimiter,
-	proposicaoController.getBySituacao
-);
-
+router.get("/situacao/:situacao", proposicaoMiddleware_1.proposicaoRateLimiter, proposicaoController.getBySituacao);
 /**
  * @openapi
  * /proposicoes/tipo/{tipo}:
@@ -331,12 +354,7 @@ router.get(
  *       500:
  *         description: Internal server error
  */
-router.get(
-	"/tipo/:tipo",
-	proposicaoRateLimiter,
-	proposicaoController.getByTipo
-);
-
+router.get("/tipo/:tipo", proposicaoMiddleware_1.proposicaoRateLimiter, proposicaoController.getByTipo);
 /**
  * @openapi
  * /proposicoes/{id}:
@@ -386,8 +404,7 @@ router.get(
  *       500:
  *         description: Internal server error
  */
-router.get("/:id", proposicaoRateLimiter, proposicaoController.getById);
-
+router.get("/:id", proposicaoMiddleware_1.proposicaoRateLimiter, proposicaoController.getById);
 /**
  * @openapi
  * /proposicoes/{id}/simplify:
@@ -425,12 +442,7 @@ router.get("/:id", proposicaoRateLimiter, proposicaoController.getById);
  *       500:
  *         description: Internal server error
  */
-router.get(
-	"/:id/simplify",
-	proposicaoRateLimiter,
-	proposicaoController.simplify
-);
-
+router.get("/:id/simplify", proposicaoMiddleware_1.proposicaoRateLimiter, proposicaoController.simplify);
 /**
  * @openapi
  * /proposicoes:
@@ -499,6 +511,5 @@ router.get(
  *       500:
  *         description: Internal server error
  */
-router.get("/", proposicaoRateLimiter, proposicaoController.getAll);
-
-export default router;
+router.get("/", proposicaoMiddleware_1.proposicaoRateLimiter, proposicaoController.getAll);
+exports.default = router;

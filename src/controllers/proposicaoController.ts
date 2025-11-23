@@ -90,6 +90,43 @@ export const getById = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * Simplify proposição and return text summary + audio (base64)
+ */
+export const simplify = async (req: Request, res: Response): Promise<void> => {
+	try {
+		console.log(`[REQUEST] Simplify proposição called - params:`, req.params);
+		const id = parseInt(req.params.id);
+
+		if (isNaN(id)) {
+			res.status(400).json({ error: "ID inválido" });
+			return;
+		}
+
+		const result = await proposicaoService.simplifyProposicao(id);
+		if (!result) {
+			res.status(404).json({ error: "Proposição não encontrada" });
+			return;
+		}
+
+		if (!result.audioBase64) {
+			// Text-only response
+			res.status(200).json({ text: result.text, audioBase64: null });
+			return;
+		}
+
+		res.status(200).json(result);
+	} catch (error) {
+		console.error("Simplify error:", error);
+		// Distinguish timeout error
+		if (error instanceof Error && error.message?.toLowerCase().includes("timeout")) {
+			res.status(504).json({ error: "Timeout ao gerar resposta do serviço externo" });
+			return;
+		}
+		res.status(500).json({ error: "Erro ao simplificar proposição" });
+	}
+};
+
+/**
  * Get all proposições (paginated)
  */
 export const getAll = async (req: Request, res: Response): Promise<void> => {
