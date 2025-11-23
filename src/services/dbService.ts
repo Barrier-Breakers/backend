@@ -260,3 +260,55 @@ export class PostService {
 		}
 	}
 }
+
+export class DenunciaService {
+	static async createDenuncia(userId: string, titulo: string, descricao: string | null, medias: string[] | undefined = [], tags: string[] | undefined = [], lat: number, lng: number) {
+		try {
+			const id = require("crypto").randomUUID();
+			// Use raw SQL to set geography location with ST_MakePoint
+			const result = await prisma.$executeRaw`
+				INSERT INTO denuncias (id, "userId", titulo, descricao, medias, status, tags, location, upvotes, downvotes, "createdAt", "updatedAt")
+				VALUES (${id}, ${userId}, ${titulo}, ${descricao}, ${medias}, 'aberta', ${tags}, ST_MakePoint(${lng}, ${lat})::geography, 0, 0, now(), now())
+			`;
+			return { id };
+		} catch (error) {
+			console.error("Error creating denuncia:", error);
+			throw error;
+		}
+	}
+
+	static async getDenunciasInRadius(userId: string | null, lat: number | null, lng: number | null, radiusMeters: number = 2000, skip = 0, take = 20) {
+		try {
+			if (lat == null || lng == null) {
+				const [rows, total] = await Promise.all([
+					prisma.$queryRaw`SELECT * FROM denuncias ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}`,
+					prisma.$queryRaw`SELECT COUNT(*)::int FROM denuncias`,
+				]);
+				return { denuncias: rows, total: total[0].count };
+			}
+
+			const rows: any = await prisma.$queryRaw`
+				SELECT * FROM denuncias WHERE "userId" = ${userId} OR ST_DWithin(location, ST_MakePoint(${lng}, ${lat})::geography, ${radiusMeters}) ORDER BY "createdAt" DESC LIMIT ${take} OFFSET ${skip}
+			`;
+			const totalRes: any = await prisma.$queryRaw`
+				SELECT COUNT(*)::int AS count FROM denuncias WHERE "userId" = ${userId} OR ST_DWithin(location, ST_MakePoint(${lng}, ${lat})::geography, ${radiusMeters})
+			`;
+			return { denuncias: rows, total: totalRes[0].count };
+		} catch (error) {
+			console.error("Error fetching denuncias:", error);
+			throw error;
+		}
+	}
+
+	static async addComment(denunciaId: string, userId: string, texto: string, medias: string[] | undefined = []) {
+		try {
+			return await prisma.denunciaComentario.create({
+				data: { id: require("crypto").randomUUID(), denunciaId, userId, texto, medias },
+			});
+		} catch (error) {
+			console.error("Error adding comment:", error);
+			throw error;
+		}
+	}
+}
+

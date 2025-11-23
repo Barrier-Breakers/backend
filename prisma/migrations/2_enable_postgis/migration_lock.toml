@@ -1,0 +1,10 @@
+{
+  "version": "7.0.0",
+  "dialect": "postgresql",
+  "steps": [
+    {
+      "stepType": "RunRawSQL",
+      "rawSql": "CREATE EXTENSION IF NOT EXISTS postgis;"
+    }
+  ]
+}

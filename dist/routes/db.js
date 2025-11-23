@@ -1,10 +1,18 @@
-import { Router, Request, Response } from "express";
-import { UserService, PostService } from "../services/dbService";
-
-const router = Router();
-
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const dbService_1 = require("../services/dbService");
+const router = (0, express_1.Router)();
 // ==================== USER ROUTES ====================
-
 /**
  * @openapi
  * /api/users:
@@ -42,18 +50,17 @@ const router = Router();
  *                 pages:
  *                   type: integer
  */
-router.get("/users", async (req: Request, res: Response) => {
-	try {
-		const skip = parseInt(req.query.skip as string) || 0;
-		const take = parseInt(req.query.take as string) || 10;
-
-		const result = await UserService.getAllUsers(skip, take);
-		res.json(result);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch users" });
-	}
-});
-
+router.get("/users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const skip = parseInt(req.query.skip) || 0;
+        const take = parseInt(req.query.take) || 10;
+        const result = yield dbService_1.UserService.getAllUsers(skip, take);
+        res.json(result);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to fetch users" });
+    }
+}));
 /**
  * @openapi
  * /api/users/{id}:
@@ -77,18 +84,18 @@ router.get("/users", async (req: Request, res: Response) => {
  *       404:
  *         description: User not found
  */
-router.get("/users/:id", async (req: Request, res: Response) => {
-	try {
-		const user = await UserService.getUserById(req.params.id);
-		if (!user) {
-			return res.status(404).json({ error: "User not found" });
-		}
-		res.json(user);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch user" });
-	}
-});
-
+router.get("/users/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const user = yield dbService_1.UserService.getUserById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.json(user);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to fetch user" });
+    }
+}));
 /**
  * @openapi
  * /api/users:
@@ -116,21 +123,19 @@ router.get("/users/:id", async (req: Request, res: Response) => {
  *       201:
  *         description: User created
  */
-router.post("/users", async (req: Request, res: Response) => {
-	try {
-		const { email, name, avatar } = req.body;
-
-		if (!email) {
-			return res.status(400).json({ error: "Email is required" });
-		}
-
-		const user = await UserService.createUser(email, name, avatar);
-		res.status(201).json(user);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to create user" });
-	}
-});
-
+router.post("/users", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { email, name, avatar } = req.body;
+        if (!email) {
+            return res.status(400).json({ error: "Email is required" });
+        }
+        const user = yield dbService_1.UserService.createUser(email, name, avatar);
+        res.status(201).json(user);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to create user" });
+    }
+}));
 /**
  * @openapi
  * /api/users/{id}:
@@ -159,17 +164,16 @@ router.post("/users", async (req: Request, res: Response) => {
  *       200:
  *         description: User updated
  */
-router.put("/users/:id", async (req: Request, res: Response) => {
-	try {
-		const { name, avatar } = req.body;
-
-		const user = await UserService.updateUser(req.params.id, { name, avatar });
-		res.json(user);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to update user" });
-	}
-});
-
+router.put("/users/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { name, avatar } = req.body;
+        const user = yield dbService_1.UserService.updateUser(req.params.id, { name, avatar });
+        res.json(user);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to update user" });
+    }
+}));
 /**
  * @openapi
  * /api/users/{id}:
@@ -187,17 +191,16 @@ router.put("/users/:id", async (req: Request, res: Response) => {
  *       200:
  *         description: User deleted successfully
  */
-router.delete("/users/:id", async (req: Request, res: Response) => {
-	try {
-		await UserService.deleteUser(req.params.id);
-		res.json({ message: "User deleted successfully" });
-	} catch (error) {
-		res.status(500).json({ error: "Failed to delete user" });
-	}
-});
-
+router.delete("/users/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield dbService_1.UserService.deleteUser(req.params.id);
+        res.json({ message: "User deleted successfully" });
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to delete user" });
+    }
+}));
 // ==================== POST ROUTES ====================
-
 /**
  * @openapi
  * /api/posts:
@@ -220,18 +223,17 @@ router.delete("/users/:id", async (req: Request, res: Response) => {
  *       200:
  *         description: Posts list
  */
-router.get("/posts", async (req: Request, res: Response) => {
-	try {
-		const skip = parseInt(req.query.skip as string) || 0;
-		const take = parseInt(req.query.take as string) || 10;
-
-		const result = await PostService.getAllPosts(skip, take);
-		res.json(result);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch posts" });
-	}
-});
-
+router.get("/posts", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const skip = parseInt(req.query.skip) || 0;
+        const take = parseInt(req.query.take) || 10;
+        const result = yield dbService_1.PostService.getAllPosts(skip, take);
+        res.json(result);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to fetch posts" });
+    }
+}));
 /**
  * @openapi
  * /api/posts/{id}:
@@ -251,18 +253,18 @@ router.get("/posts", async (req: Request, res: Response) => {
  *       404:
  *         description: Post not found
  */
-router.get("/posts/:id", async (req: Request, res: Response) => {
-	try {
-		const post = await PostService.getPostById(req.params.id);
-		if (!post) {
-			return res.status(404).json({ error: "Post not found" });
-		}
-		res.json(post);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch post" });
-	}
-});
-
+router.get("/posts/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const post = yield dbService_1.PostService.getPostById(req.params.id);
+        if (!post) {
+            return res.status(404).json({ error: "Post not found" });
+        }
+        res.json(post);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to fetch post" });
+    }
+}));
 /**
  * @openapi
  * /api/users/{userId}/posts:
@@ -290,18 +292,17 @@ router.get("/posts/:id", async (req: Request, res: Response) => {
  *       200:
  *         description: Posts list for user
  */
-router.get("/users/:userId/posts", async (req: Request, res: Response) => {
-	try {
-		const skip = parseInt(req.query.skip as string) || 0;
-		const take = parseInt(req.query.take as string) || 10;
-
-		const result = await PostService.getPostsByUserId(req.params.userId, skip, take);
-		res.json(result);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to fetch user posts" });
-	}
-});
-
+router.get("/users/:userId/posts", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const skip = parseInt(req.query.skip) || 0;
+        const take = parseInt(req.query.take) || 10;
+        const result = yield dbService_1.PostService.getPostsByUserId(req.params.userId, skip, take);
+        res.json(result);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to fetch user posts" });
+    }
+}));
 /**
  * @openapi
  * /api/posts:
@@ -330,23 +331,21 @@ router.get("/users/:userId/posts", async (req: Request, res: Response) => {
  *       201:
  *         description: Post created
  */
-router.post("/posts", async (req: Request, res: Response) => {
-	try {
-		const { userId, title, content } = req.body;
-
-		if (!userId || !title || !content) {
-			return res
-				.status(400)
-				.json({ error: "userId, title, and content are required" });
-		}
-
-		const post = await PostService.createPost(userId, title, content);
-		res.status(201).json(post);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to create post" });
-	}
-});
-
+router.post("/posts", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { userId, title, content } = req.body;
+        if (!userId || !title || !content) {
+            return res
+                .status(400)
+                .json({ error: "userId, title, and content are required" });
+        }
+        const post = yield dbService_1.PostService.createPost(userId, title, content);
+        res.status(201).json(post);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to create post" });
+    }
+}));
 /**
  * @openapi
  * /api/posts/{id}:
@@ -375,17 +374,16 @@ router.post("/posts", async (req: Request, res: Response) => {
  *       200:
  *         description: Post updated
  */
-router.put("/posts/:id", async (req: Request, res: Response) => {
-	try {
-		const { title, content } = req.body;
-
-		const post = await PostService.updatePost(req.params.id, { title, content });
-		res.json(post);
-	} catch (error) {
-		res.status(500).json({ error: "Failed to update post" });
-	}
-});
-
+router.put("/posts/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { title, content } = req.body;
+        const post = yield dbService_1.PostService.updatePost(req.params.id, { title, content });
+        res.json(post);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to update post" });
+    }
+}));
 /**
  * @openapi
  * /api/posts/{id}:
@@ -403,13 +401,13 @@ router.put("/posts/:id", async (req: Request, res: Response) => {
  *       200:
  *         description: Post deleted
  */
-router.delete("/posts/:id", async (req: Request, res: Response) => {
-	try {
-		await PostService.deletePost(req.params.id);
-		res.json({ message: "Post deleted successfully" });
-	} catch (error) {
-		res.status(500).json({ error: "Failed to delete post" });
-	}
-});
-
-export default router;
+router.delete("/posts/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield dbService_1.PostService.deletePost(req.params.id);
+        res.json({ message: "Post deleted successfully" });
+    }
+    catch (error) {
+        res.status(500).json({ error: "Failed to delete post" });
+    }
+}));
+exports.default = router;
