@@ -1,0 +1,53 @@
+# Dependências (serão instaladas no container)
+node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Arquivos de ambiente (usar variáveis do Docker)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Cache
+.cache/
+.eslintcache
+.npm/
+.pnpm-store/
+
+# Build artifacts temporários
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Arquivos de lock alternativos (manter apenas pnpm-lock.yaml)
+package-lock.json
+yarn.lock
+
+# Arquivos temporários
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
