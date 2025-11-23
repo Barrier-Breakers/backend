@@ -49,6 +49,11 @@ const signUp = (supabase, payload) => __awaiter(void 0, void 0, void 0, function
     return yield supabase.auth.signUp({
         email: payload.email,
         password: payload.password,
+        options: {
+            data: {
+                display_name: payload.name,
+            },
+        },
     });
 });
 exports.signUp = signUp;

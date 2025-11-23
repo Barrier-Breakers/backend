@@ -2,11 +2,13 @@ import { Response } from "express";
 import { SupabaseClient } from "@supabase/supabase-js";
 import * as authService from "../services/authService";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
+import { UserService } from "../services/dbService";
 
 interface SignUpRequest extends AuthenticatedRequest {
 	body: {
 		email: string;
 		password: string;
+		name: string;
 	};
 }
 
@@ -23,32 +25,55 @@ interface GoogleAuthRequest extends AuthenticatedRequest {
 	};
 }
 
+interface OnboardingRequest extends AuthenticatedRequest {
+	body: {
+		race: string;
+		gender: string;
+		ageRange: string;
+		interestTopics: string[];
+	};
+}
+
 export const signUp = async (
 	req: SignUpRequest,
 	res: Response,
 ): Promise<void> => {
 	try {
 		const supabase: SupabaseClient = req.app.locals.supabase;
-		const { email, password } = req.body;
+		const { email, password, name } = req.body;
 
 		if (!supabase) {
 			res.status(500).json({ error: "Supabase client not initialized" });
 			return;
 		}
 
-		if (!email || !password) {
-			res.status(400).json({ error: "Email and password are required" });
+		if (!email || !password || !name) {
+			res.status(400).json({ error: "Email, password, and name are required" });
 			return;
 		}
 
 		const { data, error } = await authService.signUp(supabase, {
 			email,
 			password,
+			name,
 		});
 
 		if (error) {
 			res.status(400).json({ error: error.message });
 			return;
+		}
+
+		if (!data.user) {
+			res.status(500).json({ error: "User creation failed" });
+			return;
+		}
+
+		// Create user in database
+		try {
+			await UserService.createUser(data.user.id, data.user.email || "", name);
+		} catch (dbError) {
+			console.error("Error creating user in database:", dbError);
+			// Continue, as auth user is created
 		}
 
 		res.status(201).json({
@@ -145,9 +170,22 @@ export const getMe = async (
 			return;
 		}
 
+		// Ensure user exists in database
+		let dbUser = await UserService.getUserById(req.user.id);
+		if (!dbUser) {
+			try {
+				const name = req.user.user_metadata?.display_name || req.user.email;
+				await UserService.createUser(req.user.id, req.user.email || "", name);
+				dbUser = await UserService.getUserById(req.user.id);
+			} catch (dbError) {
+				console.error("Error creating user in database:", dbError);
+			}
+		}
+
 		res.status(200).json({
 			message: "Current user",
 			user: req.user,
+			dbUser,
 		});
 	} catch (err) {
 		console.error("GetMe error:", err);
@@ -185,6 +223,41 @@ export const logout = async (
 		});
 	} catch (err) {
 		console.error("Logout error:", err);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};
+
+export const completeOnboarding = async (
+	req: OnboardingRequest,
+	res: Response,
+): Promise<void> => {
+	try {
+		if (!req.user) {
+			res.status(401).json({ error: "User not authenticated" });
+			return;
+		}
+
+		const { race, gender, ageRange, interestTopics } = req.body;
+
+		if (!race || !gender || !ageRange || !interestTopics || !Array.isArray(interestTopics)) {
+			res.status(400).json({ error: "All onboarding fields are required" });
+			return;
+		}
+
+		// Update user in database
+		const updatedUser = await UserService.updateUser(req.user.id, {
+			race,
+			gender,
+			ageRange,
+			interestTopics,
+		});
+
+		res.status(200).json({
+			message: "Onboarding completed successfully",
+			user: updatedUser,
+		});
+	} catch (err) {
+		console.error("Complete onboarding error:", err);
 		res.status(500).json({ error: "Internal server error" });
 	}
 };

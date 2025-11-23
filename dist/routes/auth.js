@@ -71,6 +71,7 @@ const googleAuthLimiter = (0, redisRateLimiter_1.createRateLimiter)({
  *             required:
  *               - email
  *               - password
+ *               - name
  *             properties:
  *               email:
  *                 type: string
@@ -81,6 +82,9 @@ const googleAuthLimiter = (0, redisRateLimiter_1.createRateLimiter)({
  *                 format: password
  *                 minLength: 6
  *                 example: strongpassword123
+ *               name:
+ *                 type: string
+ *                 example: John Doe
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -360,4 +364,92 @@ router.get("/me", authMiddleware_1.authMiddleware, authController.getMe);
  *         description: Internal server error
  */
 router.post("/logout", authMiddleware_1.authMiddleware, authController.logout);
+/**
+ * @openapi
+ * /api/auth/onboarding:
+ *   post:
+ *     tags:
+ *       - Auth
+ *     summary: Complete user onboarding
+ *     description: Update user profile with onboarding information. Requires Bearer token in Authorization header.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - race
+ *               - gender
+ *               - ageRange
+ *               - interestTopics
+ *             properties:
+ *               race:
+ *                 type: string
+ *                 example: "Caucasian"
+ *               gender:
+ *                 type: string
+ *                 example: "Male"
+ *               ageRange:
+ *                 type: string
+ *                 example: "25-34"
+ *               interestTopics:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["politics", "technology", "environment"]
+ *     responses:
+ *       200:
+ *         description: Onboarding completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Onboarding completed successfully
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     race:
+ *                       type: string
+ *                     gender:
+ *                       type: string
+ *                     ageRange:
+ *                       type: string
+ *                     interestTopics:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *       400:
+ *         description: Bad request (missing fields)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized - missing or invalid token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *       500:
+ *         description: Internal server error
+ */
+router.post("/onboarding", authMiddleware_1.authMiddleware, authController.completeOnboarding);
 exports.default = router;

@@ -42,27 +42,41 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logout = exports.getMe = exports.signInWithGoogle = exports.signIn = exports.signUp = void 0;
+exports.completeOnboarding = exports.logout = exports.getMe = exports.signInWithGoogle = exports.signIn = exports.signUp = void 0;
 const authService = __importStar(require("../services/authService"));
+const dbService_1 = require("../services/dbService");
 const signUp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const supabase = req.app.locals.supabase;
-        const { email, password } = req.body;
+        const { email, password, name } = req.body;
         if (!supabase) {
             res.status(500).json({ error: "Supabase client not initialized" });
             return;
         }
-        if (!email || !password) {
-            res.status(400).json({ error: "Email and password are required" });
+        if (!email || !password || !name) {
+            res.status(400).json({ error: "Email, password, and name are required" });
             return;
         }
         const { data, error } = yield authService.signUp(supabase, {
             email,
             password,
+            name,
         });
         if (error) {
             res.status(400).json({ error: error.message });
             return;
+        }
+        if (!data.user) {
+            res.status(500).json({ error: "User creation failed" });
+            return;
+        }
+        // Create user in database
+        try {
+            yield dbService_1.UserService.createUser(data.user.id, data.user.email || "", name);
+        }
+        catch (dbError) {
+            console.error("Error creating user in database:", dbError);
+            // Continue, as auth user is created
         }
         res.status(201).json({
             message: "User registered successfully",
@@ -137,14 +151,28 @@ const signInWithGoogle = (req, res) => __awaiter(void 0, void 0, void 0, functio
 });
 exports.signInWithGoogle = signInWithGoogle;
 const getMe = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         if (!req.user) {
             res.status(401).json({ error: "User not authenticated" });
             return;
         }
+        // Ensure user exists in database
+        let dbUser = yield dbService_1.UserService.getUserById(req.user.id);
+        if (!dbUser) {
+            try {
+                const name = ((_a = req.user.user_metadata) === null || _a === void 0 ? void 0 : _a.display_name) || req.user.email;
+                yield dbService_1.UserService.createUser(req.user.id, req.user.email || "", name);
+                dbUser = yield dbService_1.UserService.getUserById(req.user.id);
+            }
+            catch (dbError) {
+                console.error("Error creating user in database:", dbError);
+            }
+        }
         res.status(200).json({
             message: "Current user",
             user: req.user,
+            dbUser,
         });
     }
     catch (err) {
@@ -180,3 +208,32 @@ const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.logout = logout;
+const completeOnboarding = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        if (!req.user) {
+            res.status(401).json({ error: "User not authenticated" });
+            return;
+        }
+        const { race, gender, ageRange, interestTopics } = req.body;
+        if (!race || !gender || !ageRange || !interestTopics || !Array.isArray(interestTopics)) {
+            res.status(400).json({ error: "All onboarding fields are required" });
+            return;
+        }
+        // Update user in database
+        const updatedUser = yield dbService_1.UserService.updateUser(req.user.id, {
+            race,
+            gender,
+            ageRange,
+            interestTopics,
+        });
+        res.status(200).json({
+            message: "Onboarding completed successfully",
+            user: updatedUser,
+        });
+    }
+    catch (err) {
+        console.error("Complete onboarding error:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+exports.completeOnboarding = completeOnboarding;

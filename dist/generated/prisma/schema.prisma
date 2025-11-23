@@ -18,12 +18,16 @@ datasource db {
 
 // User model for authentication
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  avatar    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String?
+  avatar         String?
+  race           String?
+  gender         String?
+  ageRange       String?
+  interestTopics String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
   sessions Session[]

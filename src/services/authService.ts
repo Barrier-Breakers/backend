@@ -7,6 +7,7 @@ dotenv.config();
 export interface SignUpPayload {
 	email: string;
 	password: string;
+	name: string;
 }
 
 export interface SignInPayload {
@@ -25,6 +26,11 @@ export const signUp = async (
 	return await supabase.auth.signUp({
 		email: payload.email,
 		password: payload.password,
+		options: {
+			data: {
+				display_name: payload.name,
+			},
+		},
 	});
 };
 

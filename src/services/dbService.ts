@@ -36,13 +36,18 @@ export class UserService {
 	/**
 	 * Create a new user
 	 */
-	static async createUser(email: string, name?: string, avatar?: string) {
+	static async createUser(id: string, email: string, name?: string, avatar?: string) {
 		try {
 			return await prisma.user.create({
 				data: {
+					id,
 					email,
 					name,
 					avatar,
+					race: null,
+					gender: null,
+					ageRange: null,
+					interestTopics: [],
 				},
 			});
 		} catch (error) {
@@ -56,7 +61,7 @@ export class UserService {
 	 */
 	static async updateUser(
 		userId: string,
-		data: { name?: string; avatar?: string }
+		data: { name?: string; avatar?: string; race?: string; gender?: string; ageRange?: string; interestTopics?: string[] }
 	) {
 		try {
 			return await prisma.user.update({

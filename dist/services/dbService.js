@@ -54,14 +54,19 @@ class UserService {
     /**
      * Create a new user
      */
-    static createUser(email, name, avatar) {
+    static createUser(id, email, name, avatar) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 return yield prisma_1.default.user.create({
                     data: {
+                        id,
                         email,
                         name,
                         avatar,
+                        race: null,
+                        gender: null,
+                        ageRange: null,
+                        interestTopics: [],
                     },
                 });
             }
