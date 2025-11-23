@@ -78,14 +78,11 @@ export const synthesizeChirpAudioBase64 = async (
 	text: string,
 	opts?: TTSOptions
 ) => {
-	const languageCode = opts?.languageCode || "pt-BR";
-	const voiceName = opts?.voiceName || "pt-BR-Chirp-3-Female";
-	const audioEncoding = (opts?.audioEncoding as any) || "MP3";
-	const speakingRate =
-		typeof opts?.speakingRate === "number"
-			? opts.speakingRate
-			: 1.0;
-	const pitch = typeof opts?.pitch === "number" ? opts.pitch : 0.0;
+	const languageCode = "pt-BR";
+	const voiceName = "pt-BR-Chirp3-HD-Achernar";
+	const audioEncoding = "MP3";
+	const speakingRate = 1.0;
+	const pitch = 0.0;
 
 	const request: any = {
 		input: { text },

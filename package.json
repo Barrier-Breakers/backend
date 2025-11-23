@@ -28,6 +28,7 @@
 	"type": "commonjs",
 	"dependencies": {
 		"@google-cloud/text-to-speech": "^6.4.0",
+		"@prisma/client-runtime-utils": "^7.0.0",
 		"@google/genai": "^1.30.0",
 		"@prisma/adapter-pg": "^7.0.0",
 		"@prisma/client": "^7.0.0",

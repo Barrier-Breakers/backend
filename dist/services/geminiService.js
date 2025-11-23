@@ -61,7 +61,7 @@ function withTimeout(promise, ms, reason = "timeout") {
 const summarizeText = (content_1, ...args_1) => __awaiter(void 0, [content_1, ...args_1], void 0, function* (content, language = "pt-BR") {
     var _a, _b, _c, _d, _e, _f;
     console.log("[GeminiService] Summarize called (chars):", content === null || content === void 0 ? void 0 : content.length);
-    const prompt = `Resuma o seguinte texto para uma pessoa leiga, em ${language}:\n\n${content}\n\nRetorne um texto claro e objetivo com título, um parágrafo de resumo curto, e bullets com os pontos importantes. Use linguagem simples e evite jargões.`;
+    const prompt = `Resuma o seguinte texto para uma pessoa leiga, em ${language}:\n\n${content}\n\nRetorne apenas o resultado final, sem qualquer preâmbulo ou explicação. Produza: um título, um parágrafo resumo curto, e bullets com os pontos importantes. Não inclua frases como "Aqui está o resumo" ou qualquer texto adicional; responda apenas com o resumo solicitado.`;
     const response = yield withTimeout(ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,

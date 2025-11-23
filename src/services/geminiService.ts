@@ -25,7 +25,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, reason = "timeout") {
 
 export const summarizeText = async (content: string, language = "pt-BR") => {
 	console.log("[GeminiService] Summarize called (chars):", content?.length);
-	const prompt = `Resuma o seguinte texto para uma pessoa leiga, em ${language}:\n\n${content}\n\nRetorne um texto claro e objetivo com título, um parágrafo de resumo curto, e bullets com os pontos importantes. Use linguagem simples e evite jargões.`;
+	const prompt = `Resuma o seguinte texto para uma pessoa leiga, em ${language}:\n\n${content}\n\nRetorne apenas o resultado final, sem qualquer preâmbulo ou explicação. Produza: um título, um parágrafo resumo curto, e bullets com os pontos importantes. Não inclua frases como "Aqui está o resumo" ou qualquer texto adicional; responda apenas com o resumo solicitado.`;
 
 	const response: any = await withTimeout(
 		ai.models.generateContent({

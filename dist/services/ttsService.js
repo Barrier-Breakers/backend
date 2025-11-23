@@ -103,13 +103,11 @@ catch (err) {
     client = new text_to_speech_1.default.TextToSpeechClient();
 }
 const synthesizeChirpAudioBase64 = (text, opts) => __awaiter(void 0, void 0, void 0, function* () {
-    const languageCode = (opts === null || opts === void 0 ? void 0 : opts.languageCode) || "pt-BR";
-    const voiceName = (opts === null || opts === void 0 ? void 0 : opts.voiceName) || "pt-BR-Chirp-3-Female";
-    const audioEncoding = (opts === null || opts === void 0 ? void 0 : opts.audioEncoding) || "MP3";
-    const speakingRate = typeof (opts === null || opts === void 0 ? void 0 : opts.speakingRate) === "number"
-        ? opts.speakingRate
-        : 1.0;
-    const pitch = typeof (opts === null || opts === void 0 ? void 0 : opts.pitch) === "number" ? opts.pitch : 0.0;
+    const languageCode = "pt-BR";
+    const voiceName = "pt-BR-Chirp3-HD-Achernar";
+    const audioEncoding = "MP3";
+    const speakingRate = 1.0;
+    const pitch = 0.0;
     const request = {
         input: { text },
         voice: { languageCode, name: voiceName },

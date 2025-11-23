@@ -146,9 +146,25 @@ exports.searchProposicoes = searchProposicoes;
  * Get proposição by ID
  */
 const getProposicaoById = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield prisma_1.default.proposicao.findUnique({
-        where: { id },
-    });
+    var _a;
+    // Use generated model if available
+    try {
+        if (prisma_1.default.proposicao && typeof prisma_1.default.proposicao.findUnique === 'function') {
+            return yield prisma_1.default.proposicao.findUnique({ where: { id } });
+        }
+    }
+    catch (err) {
+        console.error('[ProposicaoService] Error using prisma.proposicao model:', err);
+    }
+    // Fallback to raw query if generated client lacks the model (e.g., in certain build scenarios)
+    try {
+        const rows = yield prisma_1.default.$queryRaw `SELECT * FROM proposicoes WHERE id = ${id} LIMIT 1`;
+        return Array.isArray(rows) ? (_a = rows[0]) !== null && _a !== void 0 ? _a : null : rows !== null && rows !== void 0 ? rows : null;
+    }
+    catch (err) {
+        console.error('[ProposicaoService] Fallback raw query failed:', err);
+        throw err;
+    }
 });
 exports.getProposicaoById = getProposicaoById;
 /**
