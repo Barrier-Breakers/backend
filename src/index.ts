@@ -21,7 +21,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const app = express();
 app.locals.supabase = supabase;
 app.locals.prisma = prisma;
-const port = 8080;
+const port = process.env.PORT || 8080;
 
 
 app.use(express.json());
