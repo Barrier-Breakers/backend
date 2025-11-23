@@ -93,6 +93,27 @@ GET /api/proposicoes/2481874/simplify
 }
 ```
 
+Note: The `text` value is a short, TTS-friendly summary (title + a single paragraph), with expanded acronyms and no bullets or preamble.
+
+Behavior:
+- By default, the endpoint returns the `text` immediately and spawns an asynchronous TTS conversion; it returns HTTP 202 with a `taskId`.
+- Add `?waitForAudio=true` to the request to block until the audio is generated and return `audioBase64` in the response (may take more time).
+- Add `?audioCodec=ogg_opus` to request OGG Opus audio instead of MP3. The server will use `OGG_OPUS` encoding with the TTS service.
+
+When the endpoint returns a `taskId`, use the following endpoint to check status and fetch audio:
+
+### GET /api/proposicoes/:id/simplify/audio/:taskId
+
+**Response:**
+```json
+{
+  "id": "<taskId>",
+  "status": "processing|completed|failed",
+  "audioBase64": "... (base64) | null",
+  "error": "error message | null"
+}
+```
+
 Configuração: defina a variável de ambiente `GOOGLE_GENERATIVE_AI_API_KEY` para que o serviço chame o Gemini (text generation). Você também pode usar `GOOGLE_API_KEY` ou `GEMINI_API_KEY` como alias se preferir.
 
 Para o serviço de Texto -> Fala (Chirp 3) usamos o Cloud Text-to-Speech da Google, portanto defina também `GOOGLE_APPLICATION_CREDENTIALS` (apontando para o arquivo JSON de service account) ou configure as credenciais de aplicação padrão no ambiente.
@@ -101,6 +122,8 @@ Opções adicionais:
 - `GEMINI_TTS_TIMEOUT_MS`: timeout (ms) para a chamada de TTS; padrão 180000 (3 minutos).
 - `GEMINI_TTS_ATTEMPTS`: número de tentativas para TTS; padrão 3.
 - `GEMINI_SUMMARIZE_TIMEOUT_MS`: timeout (ms) para a geração de texto resumido; padrão 30000 (30 segundos).
+ - `GEMINI_SUMMARY_MAX_CHARS`: limite máximo de caracteres para o resumo (título + parágrafo). Padrão: 300.
+ - `GEMINI_CHIRP_MODEL`: (opcional) modelo a ser usado para as vozes Chirp quando necessário.
 
 ### GET /api/proposicoes/situacao/:situacao
 Buscar proposições por situação

@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import * as proposicaoService from "../services/proposicaoService";
+import * as audioTaskService from "../services/audioTaskService";
+import * as ttsService from "../services/ttsService";
 
 /**
  * Search proposições by term and filters
@@ -102,19 +104,50 @@ export const simplify = async (req: Request, res: Response): Promise<void> => {
 			return;
 		}
 
-		const result = await proposicaoService.simplifyProposicao(id);
-		if (!result) {
+		// Accept query param waitForAudio=true to wait for audio generation synchronously
+		const waitForAudio = (req.query.waitForAudio as string) === "true";
+		// Normalize codec: allow 'ogg_opus', 'ogg-opus', 'oggopus', 'opus', etc.
+		let audioCodec = ((req.query.audioCodec as string) || "MP3").toLowerCase();
+		if (audioCodec === "ogg-opus" || audioCodec === "ogg_opus" || audioCodec === "oggopus" || audioCodec === "opus") {
+			audioCodec = "OGG_OPUS";
+		} else {
+			audioCodec = audioCodec.toUpperCase();
+		}
+
+		const text = await proposicaoService.summarizeProposicao(id);
+		if (!text) {
 			res.status(404).json({ error: "Proposição não encontrada" });
 			return;
 		}
 
-		if (!result.audioBase64) {
-			// Text-only response
-			res.status(200).json({ text: result.text, audioBase64: null });
+		// If client requested to wait for audio, generate synchronously and return both
+		if (waitForAudio) {
+			let audioBase64: string | null = null;
+			try {
+				audioBase64 = await ttsService.synthesizeChirpAudioBase64(text, { audioEncoding: audioCodec });
+			} catch (ttsErr) {
+				console.error("[ProposicaoController] TTS error (waitForAudio):", ttsErr);
+				audioBase64 = null;
+			}
+			res.status(200).json({ text, audioBase64 });
 			return;
 		}
 
-		res.status(200).json(result);
+		// Otherwise, return text immediately with a task id, and spawn the TTS job
+		const task = audioTaskService.createTask();
+		res.status(202).json({ text, taskId: task.id, audioStatus: task.status });
+
+		// Spawn background TTS generation (fire-and-forget)
+		(async () => {
+			try {
+				audioTaskService.setTaskProcessing(task.id);
+				const audioBase64 = await ttsService.synthesizeChirpAudioBase64(text, { audioEncoding: audioCodec });
+				audioTaskService.setTaskCompleted(task.id, audioBase64);
+			} catch (err) {
+				const errMsg = err instanceof Error ? err.message : String(err);
+				audioTaskService.setTaskFailed(task.id, errMsg);
+			}
+		})();
 	} catch (error) {
 		console.error("Simplify error:", error);
 		// Distinguish timeout error
@@ -236,5 +269,27 @@ export const getStats = async (req: Request, res: Response): Promise<void> => {
 	} catch (error) {
 		console.error("GetStats error:", error);
 		res.status(500).json({ error: "Erro ao buscar estatísticas" });
+	}
+};
+
+/**
+ * Get audio task status by taskId
+ */
+export const getAudioTask = async (req: Request, res: Response): Promise<void> => {
+	try {
+		const { taskId } = req.params;
+		if (!taskId) {
+			res.status(400).json({ error: "taskId é requerido" });
+			return;
+		}
+		const task = audioTaskService.getTask(taskId);
+		if (!task) {
+			res.status(404).json({ error: "Task não encontrada ou expirada" });
+			return;
+		}
+		res.status(200).json(task);
+	} catch (err) {
+		console.error("GetAudioTask error:", err);
+		res.status(500).json({ error: "Erro ao buscar Task de áudio" });
 	}
 };

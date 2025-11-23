@@ -45,7 +45,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getProposicaoStats = exports.getProposicoesBySituacao = exports.getProposicoesByTipo = exports.getAllProposicoes = exports.simplifyProposicao = exports.getProposicaoById = exports.searchProposicoes = void 0;
+exports.getProposicaoStats = exports.getProposicoesBySituacao = exports.getProposicoesByTipo = exports.getAllProposicoes = exports.simplifyProposicao = exports.getProposicaoById = exports.summarizeProposicao = exports.searchProposicoes = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
 const geminiService = __importStar(require("./geminiService"));
 /**
@@ -142,6 +142,32 @@ const searchProposicoes = (params) => __awaiter(void 0, void 0, void 0, function
     };
 });
 exports.searchProposicoes = searchProposicoes;
+/**
+ * Summarize only (no TTS) — helper for the controller's async decisions
+ */
+const summarizeProposicao = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const proposicao = yield (0, exports.getProposicaoById)(id);
+    if (!proposicao)
+        return null;
+    const pieces = [];
+    pieces.push(`ID: ${proposicao.id} - ${proposicao.siglaTipo} ${proposicao.numero}/${proposicao.ano}`);
+    if (proposicao.ementa)
+        pieces.push(`Ementa: ${proposicao.ementa}`);
+    if (proposicao.ementaDetalhada)
+        pieces.push(`Ementa Detalhada: ${proposicao.ementaDetalhada}`);
+    if (proposicao.keywords)
+        pieces.push(`Keywords: ${proposicao.keywords}`);
+    if (proposicao.despacho)
+        pieces.push(`Despacho: ${proposicao.despacho}`);
+    if (proposicao.descricaoSituacao)
+        pieces.push(`Situação: ${proposicao.descricaoSituacao}`);
+    if (proposicao.regime)
+        pieces.push(`Regime: ${proposicao.regime}`);
+    const content = pieces.join("\n\n");
+    const summarized = yield geminiService.summarizeText(content, "pt-BR");
+    return summarized;
+});
+exports.summarizeProposicao = summarizeProposicao;
 /**
  * Get proposição by ID
  */

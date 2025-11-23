@@ -42,8 +42,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStats = exports.getBySituacao = exports.getByTipo = exports.getAll = exports.simplify = exports.getById = exports.search = void 0;
+exports.getAudioTask = exports.getStats = exports.getBySituacao = exports.getByTipo = exports.getAll = exports.simplify = exports.getById = exports.search = void 0;
 const proposicaoService = __importStar(require("../services/proposicaoService"));
+const audioTaskService = __importStar(require("../services/audioTaskService"));
+const ttsService = __importStar(require("../services/ttsService"));
 /**
  * Search proposições by term and filters
  */
@@ -137,17 +139,49 @@ const simplify = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             res.status(400).json({ error: "ID inválido" });
             return;
         }
-        const result = yield proposicaoService.simplifyProposicao(id);
-        if (!result) {
+        // Accept query param waitForAudio=true to wait for audio generation synchronously
+        const waitForAudio = req.query.waitForAudio === "true";
+        // Normalize codec: allow 'ogg_opus', 'ogg-opus', 'oggopus', 'opus', etc.
+        let audioCodec = (req.query.audioCodec || "MP3").toLowerCase();
+        if (audioCodec === "ogg-opus" || audioCodec === "ogg_opus" || audioCodec === "oggopus" || audioCodec === "opus") {
+            audioCodec = "OGG_OPUS";
+        }
+        else {
+            audioCodec = audioCodec.toUpperCase();
+        }
+        const text = yield proposicaoService.summarizeProposicao(id);
+        if (!text) {
             res.status(404).json({ error: "Proposição não encontrada" });
             return;
         }
-        if (!result.audioBase64) {
-            // Text-only response
-            res.status(200).json({ text: result.text, audioBase64: null });
+        // If client requested to wait for audio, generate synchronously and return both
+        if (waitForAudio) {
+            let audioBase64 = null;
+            try {
+                audioBase64 = yield ttsService.synthesizeChirpAudioBase64(text, { audioEncoding: audioCodec });
+            }
+            catch (ttsErr) {
+                console.error("[ProposicaoController] TTS error (waitForAudio):", ttsErr);
+                audioBase64 = null;
+            }
+            res.status(200).json({ text, audioBase64 });
             return;
         }
-        res.status(200).json(result);
+        // Otherwise, return text immediately with a task id, and spawn the TTS job
+        const task = audioTaskService.createTask();
+        res.status(202).json({ text, taskId: task.id, audioStatus: task.status });
+        // Spawn background TTS generation (fire-and-forget)
+        (() => __awaiter(void 0, void 0, void 0, function* () {
+            try {
+                audioTaskService.setTaskProcessing(task.id);
+                const audioBase64 = yield ttsService.synthesizeChirpAudioBase64(text, { audioEncoding: audioCodec });
+                audioTaskService.setTaskCompleted(task.id, audioBase64);
+            }
+            catch (err) {
+                const errMsg = err instanceof Error ? err.message : String(err);
+                audioTaskService.setTaskFailed(task.id, errMsg);
+            }
+        }))();
     }
     catch (error) {
         console.error("Simplify error:", error);
@@ -261,3 +295,26 @@ const getStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
 });
 exports.getStats = getStats;
+/**
+ * Get audio task status by taskId
+ */
+const getAudioTask = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { taskId } = req.params;
+        if (!taskId) {
+            res.status(400).json({ error: "taskId é requerido" });
+            return;
+        }
+        const task = audioTaskService.getTask(taskId);
+        if (!task) {
+            res.status(404).json({ error: "Task não encontrada ou expirada" });
+            return;
+        }
+        res.status(200).json(task);
+    }
+    catch (err) {
+        console.error("GetAudioTask error:", err);
+        res.status(500).json({ error: "Erro ao buscar Task de áudio" });
+    }
+});
+exports.getAudioTask = getAudioTask;

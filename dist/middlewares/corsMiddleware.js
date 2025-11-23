@@ -19,11 +19,12 @@ const ALLOWED_ORIGINS = [
     "http://127.0.0.1:4000",
     // Dev Tunnels (Microsoft Dev Tunnels)
     "https://4d8wf50z-3000.brs.devtunnels.ms",
+    "https://4d8wf50z-3000.brs.devtunnels.ms/",
     "https://4d8wf50z-4000.brs.devtunnels.ms",
     "https://4d8wf50z-4000.brs.devtunnels.ms/",
     "*",
     // Add production URLs here when ready
-    "https://legistlai-frontend.vercel.app",
+    "https://legisla-ai.vercel.app",
     // "https://app.yourdomain.com",
 ];
 // HTTP methods allowed

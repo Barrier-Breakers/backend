@@ -72,23 +72,32 @@ export interface TTSOptions {
 	audioEncoding?: string; // 'MP3' | 'LINEAR16' | 'OGG_OPUS'
 	speakingRate?: number;
 	pitch?: number;
+	model?: string; // Some Chirp voices require a model identifier
 }
 
 export const synthesizeChirpAudioBase64 = async (
 	text: string,
 	opts?: TTSOptions
 ) => {
-	const languageCode = "pt-BR";
-	const voiceName = "pt-BR-Chirp3-HD-Achernar";
-	const audioEncoding = "MP3";
-	const speakingRate = 1.0;
-	const pitch = 0.0;
+	const languageCode = opts?.languageCode || process.env.GEMINI_CHIRP_LANGUAGE || "pt-BR";
+	const voiceName = opts?.voiceName || process.env.GEMINI_CHIRP_VOICE || "pt-BR-Chirp3-HD-Achernar";
+	const audioEncoding = (opts?.audioEncoding || process.env.GEMINI_CHIRP_AUDIO_ENCODING || "MP3").toUpperCase();
+	const speakingRate = typeof opts?.speakingRate === 'number' ? opts.speakingRate : 1.0;
+	const pitch = typeof opts?.pitch === 'number' ? opts.pitch : 0.0;
+	const model = opts?.model || process.env.GEMINI_CHIRP_MODEL;
+
+	// Validate audioEncoding
+	const validEncodings = ["MP3", "LINEAR16", "OGG_OPUS"];
+	const chosenEncoding = validEncodings.includes(audioEncoding) ? audioEncoding : "MP3";
 
 	const request: any = {
 		input: { text },
 		voice: { languageCode, name: voiceName },
-		audioConfig: { audioEncoding, speakingRate, pitch },
+		audioConfig: { audioEncoding: chosenEncoding, speakingRate, pitch },
 	};
+	if (model) {
+		request.voice.model = model;
+	}
 
 	const [response] = await client.synthesizeSpeech(request);
 	const audioContent = response?.audioContent as

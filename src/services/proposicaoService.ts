@@ -134,6 +134,27 @@ export const searchProposicoes = async (
 };
 
 /**
+ * Summarize only (no TTS) — helper for the controller's async decisions
+ */
+export const summarizeProposicao = async (id: number) => {
+	const proposicao = await getProposicaoById(id);
+	if (!proposicao) return null;
+
+	const pieces: string[] = [];
+	pieces.push(`ID: ${proposicao.id} - ${proposicao.siglaTipo} ${proposicao.numero}/${proposicao.ano}`);
+	if (proposicao.ementa) pieces.push(`Ementa: ${proposicao.ementa}`);
+	if (proposicao.ementaDetalhada) pieces.push(`Ementa Detalhada: ${proposicao.ementaDetalhada}`);
+	if (proposicao.keywords) pieces.push(`Keywords: ${proposicao.keywords}`);
+	if (proposicao.despacho) pieces.push(`Despacho: ${proposicao.despacho}`);
+	if (proposicao.descricaoSituacao) pieces.push(`Situação: ${proposicao.descricaoSituacao}`);
+	if (proposicao.regime) pieces.push(`Regime: ${proposicao.regime}`);
+
+	const content = pieces.join("\n\n");
+	const summarized = await geminiService.summarizeText(content, "pt-BR");
+	return summarized;
+};
+
+/**
  * Get proposição by ID
  */
 export const getProposicaoById = async (id: number) => {
@@ -188,6 +209,10 @@ export const simplifyProposicao = async (id: number) => {
 			// Keep going and return text only if TTS fails
 			audioBase64 = null;
 		}
+
+        
+
+        
 
 		return {
 			text: summarized,

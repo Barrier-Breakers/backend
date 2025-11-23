@@ -433,6 +433,56 @@ router.get(
 
 /**
  * @openapi
+ * /proposicoes/{id}/simplify/audio/{taskId}:
+ *   get:
+ *     tags:
+ *       - Proposições
+ *     summary: Get audio generation task status and audio base64
+ *     description: Retrieve the status and audio (if generated) for a previously requested TTS task.
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Proposição ID
+ *         schema:
+ *           type: integer
+ *       - name: taskId
+ *         in: path
+ *         required: true
+ *         description: The audio generation task id returned when requesting simplification
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Task returned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 status:
+ *                   type: string
+ *                 audioBase64:
+ *                   type: string
+ *                 error:
+ *                   type: string
+ *       400:
+ *         description: Bad request (missing taskId)
+ *       404:
+ *         description: Task not found or expired
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+    "/:id/simplify/audio/:taskId",
+    proposicaoRateLimiter,
+    proposicaoController.getAudioTask
+);
+
+/**
+ * @openapi
  * /proposicoes:
  *   get:
  *     tags:
