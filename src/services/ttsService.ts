@@ -45,6 +45,7 @@ try {
 			);
 			client = new textToSpeech.TextToSpeechClient({
 				credentials: parsed,
+				apiEndpoint: "us-texttospeech.googleapis.com",
 			});
 		} else {
 			// Assume it's a path to a key file
@@ -53,6 +54,7 @@ try {
 			);
 			client = new textToSpeech.TextToSpeechClient({
 				keyFilename: credentialsEnv,
+				apiEndpoint: "us-texttospeech.googleapis.com",
 			});
 		}
 	} else {
@@ -88,12 +90,13 @@ export const synthesizeChirpAudioBase64 = async (
 
 	// Validate audioEncoding
 	const validEncodings = ["MP3", "LINEAR16", "OGG_OPUS"];
-	const chosenEncoding = validEncodings.includes(audioEncoding) ? audioEncoding : "MP3";
+	const chosenEncoding = validEncodings.includes(audioEncoding) ? audioEncoding : "LINEAR16";
 
 	const request: any = {
 		input: { text },
 		voice: { languageCode, name: voiceName },
 		audioConfig: { audioEncoding: chosenEncoding, speakingRate, pitch },
+		
 	};
 	if (model) {
 		request.voice.model = model;

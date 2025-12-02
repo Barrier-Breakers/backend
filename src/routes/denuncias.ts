@@ -72,10 +72,10 @@ router.get("/", denunciaController.list);
  *               - titulo
  *               - lat
  *               - lng
-*             required:
-*               - titulo
+ *             required:
+ *               - titulo
  *             properties:
-*               # The authenticated user (via Bearer token) will be used as the author of the denuncia
+ *               # The authenticated user (via Bearer token) will be used as the author of the denuncia
  *               titulo:
  *                 type: string
  *               descricao:
@@ -114,11 +114,11 @@ router.post("/", authMiddleware, denunciaController.create);
  *         application/json:
  *           schema:
  *             type: object
-*             required:
-*               - lat
-*               - lng
+ *             required:
+ *               - lat
+ *               - lng
  *             properties:
-*               # The authenticated user (via Bearer token) will be used as the author of the mock denuncias
+ *               # The authenticated user (via Bearer token) will be used as the author of the mock denuncias
  *               lat:
  *                 type: number
  *               lng:
@@ -157,15 +157,15 @@ router.post("/mock", authMiddleware, denunciaController.createMock);
  *             type: object
  *               - texto
  *             properties:
-*             required:
-*               - texto
+ *             required:
+ *               - texto
  *               texto:
  *                 type: string
  *               medias:
  *                 type: array
  *                 items:
  *                   type: string
-*               # The authenticated user (via Bearer token) will be used as the author of the comment
+ *               # The authenticated user (via Bearer token) will be used as the author of the comment
  *     responses:
  *       201:
  *         description: Comment added

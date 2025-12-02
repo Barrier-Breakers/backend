@@ -60,3 +60,33 @@ app.listen(port, () => {
 	console.log(`Docs available at http://localhost:${port}/docs`);
 	console.log(`Health check at http://localhost:${port}/health`);
 });
+
+// Warm-up queries to minimize cold-start latency for first requests
+(async () => {
+	try {
+		if (process.env.DEBUG_TIMINGS === 'true' || process.env.NODE_ENV === 'development') {
+			console.log('[Startup] Running warm-up DB query');
+		}
+		await prisma.$queryRaw`SELECT 1`;
+		// Also warm up a lightweight query to compile any Prisma engine pieces
+		await prisma.proposicao.findFirst({ select: { id: true } });
+		if (process.env.DEBUG_TIMINGS === 'true' || process.env.NODE_ENV === 'development') {
+			console.log('[Startup] Warm-up completed');
+		}
+	} catch (err) {
+		console.error('[Startup] Warm-up failed:', err);
+	}
+})();
+
+// Schedule periodic warm-up pings to keep DB cache hot (configurable via env)
+const warmupIntervalMin = parseInt(process.env.WARMUP_INTERVAL_MIN || '5', 10);
+setInterval(async () => {
+	try {
+		if (process.env.DEBUG_TIMINGS === 'true' || process.env.NODE_ENV === 'development') {
+			console.log('[Warmup] periodic DB warmup running');
+		}
+		await prisma.proposicao.findFirst({ select: { id: true } });
+	} catch (err) {
+		console.error('[Warmup] periodic DB warmup failed:', err);
+	}
+}, warmupIntervalMin * 60 * 1000);

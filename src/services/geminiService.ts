@@ -13,7 +13,7 @@ if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && !process.env.GOOGLE_API_KEY && 
 const ai = new GoogleGenAI({});
 
 const TIMEOUT_MS_SUMMARIZE = Number(process.env.GEMINI_SUMMARIZE_TIMEOUT_MS || 30_000);
-const MAX_SUMMARY_CHARS = Number(process.env.GEMINI_SUMMARY_MAX_CHARS || 600);
+const MAX_SUMMARY_CHARS = Number(process.env.GEMINI_SUMMARY_MAX_CHARS || 700);
 const TIMEOUT_MS_TTS = Number(process.env.GEMINI_TTS_TIMEOUT_MS || 360_000); // default 3 minutes
 const TTS_ATTEMPTS = Number(process.env.GEMINI_TTS_ATTEMPTS || 3);
 

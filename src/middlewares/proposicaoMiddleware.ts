@@ -27,7 +27,7 @@ export const searchRateLimiter = createRateLimiter({
 export const proposicaoRateLimiter = createRateLimiter({
 	keyPrefix: "proposicoes:general",
 	windowSec: 60,
-	max: 30,
+	max: 60,
 	keyGenerator: (req: Request) => {
 		return (
 			req.ip ||

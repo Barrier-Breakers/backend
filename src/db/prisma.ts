@@ -7,6 +7,9 @@ const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 
+// Track prisma client init timestamp for cold-start analysis
+export const prismaInitTimestamp = Date.now();
+
 // Instantiate Prisma Client
 const prisma = new PrismaClient({
 	adapter,
@@ -34,3 +37,6 @@ process.on("SIGTERM", async () => {
 });
 
 export default prisma;
+
+// Also expose a helper to retrieve the init timestamp (for other modules/tests)
+export const getPrismaInitTimestamp = () => prismaInitTimestamp;
