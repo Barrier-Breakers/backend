@@ -7,26 +7,19 @@ Reduzir consultas de 4s → milissegundos usando Redis com o padrão cache-aside
    Redis Upstash:
    npm install @upstash/redis
 
-Redis “normal”:
-npm install ioredis
+Redis Upstash (recommended):
+npm install @upstash/redis
 
 2. Criar cliente Redis
    /src/lib/redis.ts
 
-(Escolha Upstash ou ioredis)
-
-Upstash:
+Upstash (preferred):
 import { Redis } from "@upstash/redis";
 
 export const redis = new Redis({
-url: process.env.REDIS_URL!,
-token: process.env.REDIS_TOKEN!,
+   url: process.env.UPSTASH_REDIS_REST_URL!,
+   token: process.env.UPSTASH_REDIS_REST_TOKEN!,
 });
-
-ioredis:
-import Redis from "ioredis";
-
-export const redis = new Redis(process.env.REDIS_URL!);
 
 3. Criar helper genérico de cache (cache-aside)
    /src/utils/cache.ts

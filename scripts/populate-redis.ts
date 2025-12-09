@@ -93,7 +93,11 @@ async function main() {
       addField("dataApresentacao", proposicao.dataApresentacao?.toISOString?.() || proposicao.dataApresentacao);
 
       if (fields.length > 0) {
-        pipeline.hset(key, ...fields);
+        const kv: Record<string, any> = {};
+        for (let i = 0; i < fields.length; i += 2) {
+          kv[String(fields[i])] = String(fields[i + 1]);
+        }
+        pipeline.hset(key, kv);
       }
     }
 

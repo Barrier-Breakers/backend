@@ -47,69 +47,91 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getProposicaoStats = exports.getProposicoesBySituacao = exports.getProposicoesByTipo = exports.getAllProposicoes = exports.simplifyProposicao = exports.getProposicaoById = exports.summarizeProposicao = exports.searchProposicoes = void 0;
 const prisma_1 = __importDefault(require("../db/prisma"));
+const cache_1 = require("../utils/cache");
 const geminiService = __importStar(require("./geminiService"));
+const redisSearch = __importStar(require("./redisSearchService"));
 /**
  * Search proposições by term and filters
+ * Uses RediSearch for fast full-text search
  */
 const searchProposicoes = (params) => __awaiter(void 0, void 0, void 0, function* () {
     const { query, filters = {}, limit, offset } = params;
+    const debugTimings = process.env.DEBUG_TIMINGS === 'true' || process.env.NODE_ENV === 'development';
+    const startAt = Date.now();
+    try {
+        // Try RediSearch first
+        const redisCount = yield redisSearch.getProposicoesCount();
+        if (redisCount > 0) {
+            if (debugTimings)
+                console.log(`[ProposicaoService] Using RediSearch (${redisCount} docs)`);
+            const result = yield redisSearch.searchProposicoes({
+                query,
+                filters,
+                limit,
+                offset,
+            });
+            if (debugTimings)
+                console.log(`[ProposicaoService] RediSearch done - duration=${Date.now() - startAt}ms`);
+            return {
+                data: result.data,
+                total: result.total,
+                limit,
+                offset,
+                pages: Math.ceil(result.total / limit),
+                query,
+                hasFilters: Object.keys(filters).length > 0,
+                fromCache: false,
+            };
+        }
+    }
+    catch (err) {
+        console.error("[ProposicaoService] RediSearch failed, falling back to Postgres:", err);
+    }
+    // Fallback to Postgres if Redis is empty or fails
+    if (debugTimings)
+        console.log(`[ProposicaoService] Fallback to Postgres`);
+    return searchProposicoesFallback(params);
+});
+exports.searchProposicoes = searchProposicoes;
+/**
+ * Fallback search using Postgres (used when Redis is not available)
+ */
+const searchProposicoesFallback = (params) => __awaiter(void 0, void 0, void 0, function* () {
+    const { query, filters = {}, limit, offset } = params;
+    const debugTimings = process.env.DEBUG_TIMINGS === 'true' || process.env.NODE_ENV === 'development';
+    const startAt = Date.now();
     // Build where conditions
     const where = {};
-    // Apply filters if provided
-    if (filters.siglaTipo) {
+    if (filters.siglaTipo)
         where.siglaTipo = filters.siglaTipo;
-    }
-    if (filters.ano) {
+    if (filters.ano)
         where.ano = filters.ano;
-    }
-    if (filters.codTipo) {
+    if (filters.codTipo)
         where.codTipo = filters.codTipo;
-    }
     if (filters.descricaoTipo) {
-        where.descricaoTipo = {
-            contains: filters.descricaoTipo,
-            mode: "insensitive",
-        };
+        where.descricaoTipo = { contains: filters.descricaoTipo, mode: "insensitive" };
     }
-    if (filters.codOrgao) {
+    if (filters.codOrgao)
         where.codOrgao = filters.codOrgao;
-    }
-    if (filters.siglaOrgao) {
+    if (filters.siglaOrgao)
         where.siglaOrgao = filters.siglaOrgao;
-    }
     if (filters.regime) {
-        where.regime = {
-            contains: filters.regime,
-            mode: "insensitive",
-        };
+        where.regime = { contains: filters.regime, mode: "insensitive" };
     }
     if (filters.descricaoTramitacao) {
-        where.descricaoTramitacao = {
-            contains: filters.descricaoTramitacao,
-            mode: "insensitive",
-        };
+        where.descricaoTramitacao = { contains: filters.descricaoTramitacao, mode: "insensitive" };
     }
-    if (filters.idTipoTramitacao) {
+    if (filters.idTipoTramitacao)
         where.idTipoTramitacao = filters.idTipoTramitacao;
-    }
     if (filters.descricaoSituacao) {
-        where.descricaoSituacao = {
-            contains: filters.descricaoSituacao,
-            mode: "insensitive",
-        };
+        where.descricaoSituacao = { contains: filters.descricaoSituacao, mode: "insensitive" };
     }
     if (filters.apreciacao) {
-        where.statusApreciacao = {
-            contains: filters.apreciacao,
-            mode: "insensitive",
-        };
+        where.statusApreciacao = { contains: filters.apreciacao, mode: "insensitive" };
     }
-    // Apply search term across multiple fields
-    // For each search word, require it to be present in at least one of the searchable fields
     if (query && query.length > 0) {
         const words = query.trim().split(/\s+/).filter((word) => word.length > 0);
         if (words.length > 0) {
-            // Build an AND array where each element is an OR across the fields for a single word
             where.AND = words.map((word) => ({
                 OR: [
                     { keywords: { contains: word, mode: "insensitive" } },
@@ -119,18 +141,17 @@ const searchProposicoes = (params) => __awaiter(void 0, void 0, void 0, function
             }));
         }
     }
-    // Execute search
     const [results, total] = yield Promise.all([
         prisma_1.default.proposicao.findMany({
             where,
             skip: offset,
             take: limit,
-            orderBy: {
-                dataApresentacao: "desc",
-            },
+            orderBy: { dataApresentacao: "desc" },
         }),
         prisma_1.default.proposicao.count({ where }),
     ]);
+    if (debugTimings)
+        console.log(`[ProposicaoService] Postgres fallback done - duration=${Date.now() - startAt}ms`);
     return {
         data: results,
         total,
@@ -139,9 +160,9 @@ const searchProposicoes = (params) => __awaiter(void 0, void 0, void 0, function
         pages: Math.ceil(total / limit),
         query,
         hasFilters: Object.keys(filters).length > 0,
+        fromCache: false,
     };
 });
-exports.searchProposicoes = searchProposicoes;
 /**
  * Summarize only (no TTS) — helper for the controller's async decisions
  */
@@ -170,27 +191,42 @@ const summarizeProposicao = (id) => __awaiter(void 0, void 0, void 0, function* 
 exports.summarizeProposicao = summarizeProposicao;
 /**
  * Get proposição by ID
+ * Tries RediSearch first, falls back to Postgres
  */
 const getProposicaoById = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    // Use generated model if available
+    // Try RediSearch first
     try {
-        if (prisma_1.default.proposicao && typeof prisma_1.default.proposicao.findUnique === 'function') {
-            return yield prisma_1.default.proposicao.findUnique({ where: { id } });
+        const redisDoc = yield redisSearch.getProposicaoById(id);
+        if (redisDoc) {
+            return redisDoc;
         }
     }
     catch (err) {
-        console.error('[ProposicaoService] Error using prisma.proposicao model:', err);
+        console.error("[ProposicaoService] RediSearch getById failed:", err);
     }
-    // Fallback to raw query if generated client lacks the model (e.g., in certain build scenarios)
-    try {
-        const rows = yield prisma_1.default.$queryRaw `SELECT * FROM proposicoes WHERE id = ${id} LIMIT 1`;
-        return Array.isArray(rows) ? (_a = rows[0]) !== null && _a !== void 0 ? _a : null : rows !== null && rows !== void 0 ? rows : null;
-    }
-    catch (err) {
-        console.error('[ProposicaoService] Fallback raw query failed:', err);
-        throw err;
-    }
+    // Fallback to Postgres (cached)
+    const cacheKey = `proposicao:${id}`;
+    return (0, cache_1.cached)(cacheKey, cache_1.DEFAULT_TTL_SEC, () => __awaiter(void 0, void 0, void 0, function* () {
+        var _a;
+        // Use generated model if available
+        try {
+            if (prisma_1.default.proposicao && typeof prisma_1.default.proposicao.findUnique === 'function') {
+                return yield prisma_1.default.proposicao.findUnique({ where: { id } });
+            }
+        }
+        catch (err) {
+            console.error('[ProposicaoService] Error using prisma.proposicao model:', err);
+        }
+        // Fallback to raw query if generated client lacks the model
+        try {
+            const rows = yield prisma_1.default.$queryRaw `SELECT * FROM proposicoes WHERE id = ${id} LIMIT 1`;
+            return Array.isArray(rows) ? (_a = rows[0]) !== null && _a !== void 0 ? _a : null : rows !== null && rows !== void 0 ? rows : null;
+        }
+        catch (err) {
+            console.error('[ProposicaoService] Fallback raw query failed:', err);
+            throw err;
+        }
+    }));
 });
 exports.getProposicaoById = getProposicaoById;
 /**

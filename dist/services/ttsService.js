@@ -84,6 +84,7 @@ try {
             console.log("[TTS Service] GOOGLE_APPLICATION_CREDENTIALS looks like JSON, initializing client with inline credentials");
             client = new text_to_speech_1.default.TextToSpeechClient({
                 credentials: parsed,
+                apiEndpoint: "us-texttospeech.googleapis.com",
             });
         }
         else {
@@ -91,6 +92,7 @@ try {
             console.log("[TTS Service] GOOGLE_APPLICATION_CREDENTIALS looks like a path, initializing client with keyFilename");
             client = new text_to_speech_1.default.TextToSpeechClient({
                 keyFilename: credentialsEnv,
+                apiEndpoint: "us-texttospeech.googleapis.com",
             });
         }
     }
@@ -111,7 +113,7 @@ const synthesizeChirpAudioBase64 = (text, opts) => __awaiter(void 0, void 0, voi
     const model = (opts === null || opts === void 0 ? void 0 : opts.model) || process.env.GEMINI_CHIRP_MODEL;
     // Validate audioEncoding
     const validEncodings = ["MP3", "LINEAR16", "OGG_OPUS"];
-    const chosenEncoding = validEncodings.includes(audioEncoding) ? audioEncoding : "MP3";
+    const chosenEncoding = validEncodings.includes(audioEncoding) ? audioEncoding : "LINEAR16";
     const request = {
         input: { text },
         voice: { languageCode, name: voiceName },

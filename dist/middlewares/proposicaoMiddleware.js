@@ -26,7 +26,7 @@ exports.searchRateLimiter = (0, redisRateLimiter_1.createRateLimiter)({
 exports.proposicaoRateLimiter = (0, redisRateLimiter_1.createRateLimiter)({
     keyPrefix: "proposicoes:general",
     windowSec: 60,
-    max: 30,
+    max: 60,
     keyGenerator: (req) => {
         var _a;
         return (req.ip ||

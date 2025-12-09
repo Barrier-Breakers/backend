@@ -75,11 +75,11 @@ export async function dropIndex(): Promise<void> {
 export async function addProposicao(proposicao: any): Promise<void> {
   const key = `${PREFIX}${proposicao.id}`;
   
-  const fields: (string | number)[] = [];
+  const fields: Record<string, string> = {};
   
   const addField = (name: string, value: any) => {
     if (value !== null && value !== undefined) {
-      fields.push(name, String(value));
+      fields[name] = String(value);
     }
   };
 
@@ -98,7 +98,7 @@ export async function addProposicao(proposicao: any): Promise<void> {
   addField("descricaoSituacao", proposicao.descricaoSituacao);
   addField("dataApresentacao", proposicao.dataApresentacao?.toISOString?.() || proposicao.dataApresentacao);
 
-  await redis.hset(key, ...fields);
+  await redis.hset(key, fields);
 }
 
 /**

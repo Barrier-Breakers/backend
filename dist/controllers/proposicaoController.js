@@ -52,6 +52,8 @@ const ttsService = __importStar(require("../services/ttsService"));
 const search = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
+        const debugTimings = process.env.DEBUG_TIMINGS === 'true' || process.env.NODE_ENV === 'development';
+        const reqStart = Date.now();
         const searchTerm = ((_a = req.query.q) === null || _a === void 0 ? void 0 : _a.trim()) || "";
         const limit = Math.min(parseInt(req.query.limit) || 20, 100);
         const offset = parseInt(req.query.offset) || 0;
@@ -90,13 +92,24 @@ const search = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (req.query.apreciacao) {
             filters.apreciacao = req.query.apreciacao;
         }
+        const fast = req.query.fast === "true";
         const result = yield proposicaoService.searchProposicoes({
             query: searchTerm,
             filters,
             limit,
             offset,
+            fast,
         });
-        res.status(200).json(result);
+        if (debugTimings)
+            console.log(`[ProposicaoController] search - request duration=${Date.now() - reqStart}ms`);
+        // Convert result for existing UI expectations: if total unknown, return hasNext
+        const responseObj = Object.assign({}, result);
+        if (result.total === -1) {
+            // If UI expects pagination, it can use hasMore instead of total/pages
+            responseObj.total = null;
+            responseObj.pages = null;
+        }
+        res.status(200).json(responseObj);
     }
     catch (error) {
         console.error("Search error:", error);

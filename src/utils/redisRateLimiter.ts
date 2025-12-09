@@ -1,25 +1,36 @@
 import dotenv from "dotenv";
-import Redis from "ioredis";
+import { Redis as UpstashRedis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
 import { Request, Response, NextFunction } from "express";
 
 dotenv.config();
 
 // Configuração do cliente Redis
-export const redis = new Redis({
-	host: process.env.REDIS_HOST || "localhost",
-	port: Number(process.env.REDIS_PORT) || 6379,
-	password: process.env.REDIS_PASSWORD || undefined,
-	retryStrategy: (times: number) => Math.min(times * 50, 2000),
-	maxRetriesPerRequest: 3,
-});
+const upstashUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.UPSTASH_REDIS_URL;
+const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.UPSTASH_REDIS_TOKEN;
 
-redis.on("connect", () => {
-	console.log("✅ Conectado ao Redis");
-});
+// Upstash-only: Ensure credentials are present. If absent, `redis` will be null.
+export const redis: any = upstashUrl && upstashToken ? new UpstashRedis({ url: upstashUrl, token: upstashToken }) : null;
 
-redis.on("error", (err: Error) => {
-	console.error("❌ Erro no Redis:", err);
-});
+if (redis) {
+	// Attach a `.call()` helper to emulate ioredis.call for compatibility with existing code.
+	// This uses the internal requester to execute arbitrary commands.
+	if ((redis as any).client && !(redis as any).call) {
+		(redis as any).call = async (cmd: string, ...args: any[]) => {
+			const body = [cmd, ...args];
+			const res = await (redis as any).client.request({ body, path: [] });
+			// Upstash returns { result, error } normally. Recreate the ioredis-call semantics by returning result or throwing.
+			if (res?.error) {
+				throw new Error(res.error);
+			}
+			return res?.result ?? res;
+		};
+	}
+} else {
+	console.warn(
+		"[Upstash Redis] UPSTASH_REDIS_REST_URL or token not configured; Redis client disabled."
+	);
+}
 
 export interface RateLimitOptions {
 	keyPrefix?: string;
@@ -27,6 +38,8 @@ export interface RateLimitOptions {
 	max?: number;
 	keyGenerator?: (req: Request) => string;
 }
+
+const limiterCache = new Map<string, Ratelimit | null>();
 
 export async function redisRateLimit(
 	req: Request,
@@ -50,29 +63,56 @@ export async function redisRateLimit(
 				"global";
 		}
 
-		const key = `${options.keyPrefix || "rate"}:${identifier}`;
-		const ttl = options.windowSec || 60;
+		const keyPrefix = options.keyPrefix || "rate";
+		const windowSec = options.windowSec || 60;
 		const max = options.max || 10;
 
-		const count = await redis.incr(key);
-
-		if (count === 1) {
-			await redis.expire(key, ttl);
+		// If redis is not configured (should not happen due to fallback), allow request through
+		if (!redis) {
+			console.error("Redis client não está configurado.");
+			return next();
 		}
 
-		if (count > max) {
-			res.status(429).json({
-				error: `Rate limit excedido: ${max} requisições em ${ttl}s.`,
-				retryAfter: ttl,
-			});
-			return;
+		try {
+			const cacheKey = `${keyPrefix}:${windowSec}:${max}`;
+			if (!limiterCache.has(cacheKey)) {
+				limiterCache.set(
+					cacheKey,
+					new Ratelimit({
+						redis: redis as any,
+							limiter: Ratelimit.tokenBucket(max, `${windowSec} s`, max),
+						analytics: true,
+						prefix: keyPrefix,
+					}),
+				);
+			}
+
+			const limiter = limiterCache.get(cacheKey) as Ratelimit;
+			const result = await limiter.limit(identifier);
+			const { success, limit, remaining, reset } = result as any;
+
+			const resetSeconds =
+				typeof reset === "number"
+					? Math.max(0, Math.ceil((reset - Date.now()) / 1000))
+					: windowSec;
+
+			res.setHeader("X-RateLimit-Limit", limit);
+			res.setHeader("X-RateLimit-Remaining", Math.max(0, remaining));
+			res.setHeader("X-RateLimit-Reset", resetSeconds);
+
+			if (!success) {
+				res.status(429).json({
+					error: `Rate limit excedido: ${limit} requisicoes em ${windowSec}s.`,
+					retryAfter: resetSeconds,
+				});
+				return;
+			}
+
+			return next();
+		} catch (err) {
+			console.error("Erro no rate limiting Upstash:", err);
+			return next();
 		}
-
-		res.setHeader("X-RateLimit-Limit", max);
-		res.setHeader("X-RateLimit-Remaining", Math.max(0, max - count));
-		res.setHeader("X-RateLimit-Reset", ttl);
-
-		next();
 	} catch (error) {
 		console.error("Erro no rate limiting:", error);
 		next();
@@ -86,8 +126,14 @@ export function createRateLimiter(options: RateLimitOptions) {
 }
 
 export async function clearRateLimit(key: string): Promise<boolean> {
+	if (!redis) {
+		console.error('Upstash Redis nao esta configurado (verifique URL/token).');
+		return false;
+	}
+
 	try {
-		await redis.del(key);
+		// Upstash Redis client matches the ioredis API for .del
+		await (redis as any).del(key);
 		return true;
 	} catch (error) {
 		console.error("Erro ao limpar rate limit:", error);

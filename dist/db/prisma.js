@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getPrismaInitTimestamp = exports.prismaInitTimestamp = void 0;
 const client_1 = require("@prisma/client");
 const adapter_pg_1 = require("@prisma/adapter-pg");
 const pg_1 = require("pg");
@@ -16,6 +17,8 @@ const pg_1 = require("pg");
 const connectionString = `${process.env.DATABASE_URL}`;
 const pool = new pg_1.Pool({ connectionString });
 const adapter = new adapter_pg_1.PrismaPg(pool);
+// Track prisma client init timestamp for cold-start analysis
+exports.prismaInitTimestamp = Date.now();
 // Instantiate Prisma Client
 const prisma = new client_1.PrismaClient({
     adapter,
@@ -38,3 +41,6 @@ process.on("SIGTERM", () => __awaiter(void 0, void 0, void 0, function* () {
     process.exit(0);
 }));
 exports.default = prisma;
+// Also expose a helper to retrieve the init timestamp (for other modules/tests)
+const getPrismaInitTimestamp = () => exports.prismaInitTimestamp;
+exports.getPrismaInitTimestamp = getPrismaInitTimestamp;

@@ -14,13 +14,14 @@ export async function cached<T>(
 ): Promise<T> {
   const fromCache = await redis.get(key);
   if (fromCache) {
-    return JSON.parse(fromCache) as T;
+    const fromCacheStr = fromCache as unknown as string;
+    return JSON.parse(fromCacheStr) as T;
   }
 
   const result = await fetcher();
 
   // Cache in background (don't block response)
-  redis.set(key, JSON.stringify(result), "EX", ttlSeconds).catch((err) => {
+  redis.set(key, JSON.stringify(result), "EX", ttlSeconds).catch((err: any) => {
     console.error("[Cache] Failed to set cache:", err.message);
   });
 

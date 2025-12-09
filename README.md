@@ -41,7 +41,7 @@ A API fornece:
 - PostGIS (geografia, ST_MakePoint/ST_DWithin) — usado nas denúncias
 - Google Generative AI (Gemini) via `@google/genai` para sumarização
 - Google Cloud Text-to-Speech via `@google-cloud/text-to-speech` para áudio
-- Redis (ioredis) para rate limiting
+- Redis (Upstash Redis) para rate limiting
 - Docker / docker-compose
 - Swagger (swagger-jsdoc + swagger-ui-express)
 
